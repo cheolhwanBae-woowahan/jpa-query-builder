@@ -4,14 +4,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SelectQueryBuilder {
 
-    List<String> selectColumns = new ArrayList<>();
-    String fromTable = null;
-    String orderByColumn = null;
-    String orderDirection = null;
-    long limitValue = Long.MAX_VALUE;
+    SelectTarget selectTarget = new SelectTarget();
+    String tableName = null;
+    OrderTarget orderTarget;
+    Long limitValue = null;
+    List<CompareTarget> compareTargetList = new ArrayList<>();
 
     /**
      * SELECT 절 지정
@@ -19,16 +20,7 @@ public class SelectQueryBuilder {
      * @return this (메서드 체이닝)
      */
     public SelectQueryBuilder select(String... columns) {
-        List<String> inputColumns = Arrays.stream(columns).toList();
-        int uniqueColumnCnt = Set.of(columns).size();
-
-        if (inputColumns.isEmpty()) {
-            selectColumns.add("*");
-        } else if (uniqueColumnCnt != inputColumns.size()) {
-            throw new IllegalArgumentException("select에 중복된 칼럼이 있음");
-        } else {
-            this.selectColumns.addAll(inputColumns);
-        }
+        this.selectTarget.addSelectColumns(columns);
         return this;
     }
 
@@ -41,7 +33,7 @@ public class SelectQueryBuilder {
         if (table == null) {
             throw new IllegalStateException("from에 테이블은 필수값임");
         }
-        this.fromTable = table;
+        this.tableName = table;
         return this;
     }
 
@@ -52,13 +44,7 @@ public class SelectQueryBuilder {
      * @return this
      */
     public SelectQueryBuilder orderBy(String column, String direction) {
-        this.orderByColumn = column;
-        this.orderDirection = direction;
-        if (this.orderByColumn != null && this.orderDirection == null) {
-            this.orderDirection = "ASC";
-        } else if (this.orderByColumn == null && this.orderDirection != null) {
-            throw new IllegalArgumentException("order by의 칼럼이 없이 정렬방향을 설정할 수 없음");
-        }
+        this.orderTarget = OrderOperand.parse(column, direction);
         return this;
     }
 
@@ -71,7 +57,7 @@ public class SelectQueryBuilder {
         if (limit <= 0) {
             throw new IllegalArgumentException("limit는 양의 정수여야 함");
         }
-        this.limitValue = limit;
+        this.limitValue = (long) limit;
         return this;
     }
 
@@ -80,21 +66,38 @@ public class SelectQueryBuilder {
      * @return 생성된 SQL
      */
     public String build() {
-        if (!isValid()) {
-            throw new IllegalStateException("실행할 수 없는 sql임");
+        if (tableName == null) {
+            throw new IllegalStateException("table명은 필수임");
         }
-        String selectQueryString = "SELECT " + getSelectColumnNames() + " ";
-        String fromQueryString = "FROM " + this.fromTable + " ";
-        String orderByQueryString =  (this.orderByColumn != null && this.orderDirection != null) ? "ORDER BY " + this.orderByColumn + " " + this.orderDirection + " " : "";
-        String limitQueryString = (this.limitValue != Long.MAX_VALUE) ? "LIMIT " + this.limitValue : "";
-        return (selectQueryString + fromQueryString + orderByQueryString + limitQueryString).trim();
+
+        String selectString = this.selectTarget.getSelectColumnsString();
+
+        String baseString = "SELECT " + selectString + " FROM " + tableName;
+
+        if (!compareTargetList.isEmpty()) {
+            String whereJoinString = this.compareTargetList.getFirst().getJoinString();
+
+            String whereString = this.compareTargetList.stream()
+                    .map(CompareTarget::getTargetString)
+                    .collect(Collectors.joining(whereJoinString));
+
+            baseString += " WHERE " + whereString;
+        }
+
+        if (orderTarget != null) {
+            baseString += " " + this.orderTarget.getOrderString();
+        }
+        if (limitValue != null) {
+            baseString += " LIMIT " + this.limitValue + " ";
+        }
+        return baseString.trim();
     }
 
-    private boolean isValid() {
-        return fromTable != null;
-    }
-
-    private String getSelectColumnNames() {
-        return (this.selectColumns.isEmpty()) ? "*" : String.join(", ", this.selectColumns);
+    /**
+     * WHERE 절 추가
+     */
+    public SelectQueryBuilder where(String condition) {
+        this.compareTargetList = WhereClauseParser.parse(condition);
+        return this;
     }
 }
