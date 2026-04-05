@@ -1,4 +1,6 @@
-package jdbc;
+package jdbc.enums;
+
+import jdbc.vo.CompareTarget;
 
 import java.util.*;
 
@@ -26,7 +28,7 @@ public enum CompareOperand {
                 .sorted(Comparator.comparing(it -> it.priority))
                 .filter(it -> operandValue.contains(it.operandValue))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("올바르지 않은" + operandValue));
+                .orElseThrow(() -> new IllegalArgumentException("올바르지 않은 operand: " + operandValue));
     }
 
     private static void validOperand(String operandValue) {

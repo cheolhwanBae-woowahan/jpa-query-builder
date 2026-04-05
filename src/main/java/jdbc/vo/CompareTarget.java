@@ -1,6 +1,6 @@
-package jdbc;
+package jdbc.vo;
 
-public class CompareTarget {
+public class CompareTarget extends NamedParameterTarget {
 
     private final String name;
     private final String displayValue;
@@ -12,9 +12,14 @@ public class CompareTarget {
         this.displayValue = displayValue;
         this.compareOperand = compareOperand;
         this.joinValue = joinValue;
+        super.validate(displayValue);
+        super.setNamedParameter(displayValue);
     }
 
     public String getTargetString() {
+        if (!super.isNamedParameterEmpty()) {
+            return name + " " + compareOperand + " ?";
+        }
         return name + " " + compareOperand + " " + displayValue;
     }
 
