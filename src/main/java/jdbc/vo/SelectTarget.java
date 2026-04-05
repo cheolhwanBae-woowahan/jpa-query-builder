@@ -1,4 +1,4 @@
-package jdbc;
+package jdbc.vo;
 
 import java.util.ArrayList;
 import java.util.Arrays;

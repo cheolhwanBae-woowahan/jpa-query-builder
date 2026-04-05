@@ -1,4 +1,4 @@
-package jdbc;
+package jdbc.enums;
 
 import java.util.Arrays;
 import java.util.Collections;

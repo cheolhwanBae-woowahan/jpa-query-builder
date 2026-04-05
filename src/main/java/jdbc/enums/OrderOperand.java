@@ -1,4 +1,6 @@
-package jdbc;
+package jdbc.enums;
+
+import jdbc.vo.OrderTarget;
 
 import java.util.Arrays;
 

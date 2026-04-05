@@ -1,4 +1,4 @@
-package jdbc;
+package jdbc.vo;
 
 public class OrderTarget {
 

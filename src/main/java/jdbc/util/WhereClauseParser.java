@@ -1,4 +1,8 @@
-package jdbc;
+package jdbc.util;
+
+import jdbc.enums.CompareOperand;
+import jdbc.enums.LogicOperand;
+import jdbc.vo.CompareTarget;
 
 import java.util.ArrayList;
 import java.util.List;
